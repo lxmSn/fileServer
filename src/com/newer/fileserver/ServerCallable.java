@@ -13,34 +13,31 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.concurrent.Callable;
 
-public class ServerRunnable implements Runnable {
+public class ServerCallable implements Callable<File> {
 
 	Socket socket;
 
-	int i = 1;
+	int i = 0;
 
 	// 输入流读取传来的消息
 	InputStream in;
 
-	HashMap<String, File> map ;
+//	HashMap<String, File> map ;
 
-	public ServerRunnable(Socket socket) {
+	public ServerCallable(Socket socket) {
 
 		this.socket = socket;
 
 	}
 	
-	public ServerRunnable() {
-		map=new HashMap<>();
-	}
+
 
 	@Override
-	public void run() {
-
+	public File call() throws Exception {
 		ByteArrayOutputStream baot = new ByteArrayOutputStream();
 
 		byte[] buf = new byte[1024 * 4];
-		byte[] hash = new byte[32];
+//		byte[] hash = new byte[32];
 
 		int size;
 
@@ -49,9 +46,9 @@ public class ServerRunnable implements Runnable {
 
 		try {
 			in = socket.getInputStream();
-			in.read(hash);
-
-			file = new BigInteger(1,hash).toString(16);
+//			in.read(hash);
+//
+//			file = new BigInteger(1,hash).toString(16);
 
 			while (-1 != (size = in.read(buf))) {
 				baot.write(buf, 0, size);
@@ -65,22 +62,22 @@ public class ServerRunnable implements Runnable {
 		// 文件内容
 		byte[] info = baot.toByteArray();
 
-		File f;
-		try (FileOutputStream fileOut = new FileOutputStream(f = new File(String.format("file_%3d.txt", i++)))) {
+		File f=null;
+		i++;
+		try (FileOutputStream fileOut = new FileOutputStream(f = new File(String.format("file_%3d.txt", i)))) {
 
-			if (!map.isEmpty() && map.containsKey(file)) {
-
-				System.out.println("已经存在文件，传输失败");
-
-			} else {
+//			if (!map.isEmpty() && map.containsKey(file)) {
+//
+//				System.out.println("已经存在文件，传输失败");
+//
+//			} else {
 				fileOut.write(info);
-				map.put(file, f);
+//				map.put(file, f);
 
-				System.out.println("传送成功");
-			}
-			System.out.println(file);
-			boolean b=map.containsKey(file);
-			System.out.println(b);
+//			}
+//			System.out.println(file);
+//			boolean b=map.containsKey(file);
+//			System.out.println(b);
 			fileOut.flush();
 
 		} catch (Exception e) {
@@ -96,7 +93,7 @@ public class ServerRunnable implements Runnable {
 			e.printStackTrace();
 		}
 		
-		
+		return f;
 	}
 
 

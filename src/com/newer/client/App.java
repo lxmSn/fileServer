@@ -2,6 +2,7 @@ package com.newer.client;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * 客户端
