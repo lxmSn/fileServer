@@ -1,12 +1,10 @@
 package com.newer.client;
 
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.math.BigInteger;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -22,78 +20,74 @@ import java.util.Scanner;
  */
 public class Client {
 
-	// 客户端套接字
+	// 声明一个客户端套接字
 	Socket socket;
 
-	// 服务器地址
 	String serverAddress = "";
 
-	// 服务器端口
-	int serverPort = 9000;
+	int serverPort = 10001;
 
-	// 文件输入流
-	FileInputStream fileIn;
+	public void start() throws UnknownHostException, IOException {
 
-
-	
-
-	public void start() throws UnknownHostException, IOException{
-		
-		Scanner sc =new Scanner(System.in);
-		System.out.println("输入想传输的文件名:");
-		String file=sc.nextLine();
-		
-		
-
-		System.out.println("申请连接");
+		// 实例化客户端套接字
 		socket = new Socket(serverAddress, serverPort);
-		System.out.println("连接成功");
 
-		fileIn = new FileInputStream(file);
+		// 获得要上传的文件
+		Scanner sc = new Scanner(System.in);
+		System.out.println("请输入要上传的文件：");
+		String sourceFile = sc.next();
+		sc.close();
 
-		ByteArrayOutputStream baot = new ByteArrayOutputStream();
+		// 定义一个文件输入流
+		FileInputStream filein = new FileInputStream(sourceFile);
+		// 通过套接字建立客户端向服务端的输出流和输入流
+		OutputStream out = socket.getOutputStream();
+		InputStream in = socket.getInputStream();
 
-		byte[] buf = new byte[1024 * 4];
-
+		// 定义一个字节数组
+		byte[] buffer = new byte[1024 * 4];
 		int size;
-		
-		while(-1!=(size=fileIn.read(buf))) {
-			baot.write(buf,0,size);
+		// 定义一个可变长度数组，用于存放文件的字节数组
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		// 将文件读进字节数组,并存入长度可变数组
+		while (-1 != (size = filein.read(buffer))) {
+			baos.write(buffer, 0, size);
 		}
-		//文件内容
-		byte[] info=baot.toByteArray();
-		
-		//第一次传输文件的散列值
-		
-		String filehash="";
-		byte[] hash=null;
-		
+
+		// 计算文件的散列值的并发送到服务端
 		try {
-			 hash= MessageDigest.getInstance("SHA-256").digest(info);
-			 filehash=new BigInteger(1,hash).toString(16);
-			System.out.println(filehash);
+			byte[] hash = MessageDigest.getInstance("SHA-256").digest(baos.toByteArray());
+			out.write(hash);
+			
 		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		BufferedOutputStream out=new BufferedOutputStream(socket.getOutputStream());
-		
-		
-		
-		
-		out.write(hash);
-		out.flush();
-		
-		out.write(info);
-		out.flush();
 
-		System.out.println("发送完毕");
+		size = in.read(buffer);
+		String signal = new String(buffer, 0, size);
 
-		fileIn.close();
-		
+		if (signal.equals("unexist")) {
+			out.write(baos.toByteArray());
+			System.out.println("上传完成");
+		} else {
+			System.out.println("文件已存在！");
+		}
+
+		System.out.println("over");
+
+		in.close();
+		out.close();
+		filein.close();
 		socket.close();
 
 	}
 
+	public static void main(String[] args) {
+		Client client = new Client();
+		try {
+			client.start();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 }
